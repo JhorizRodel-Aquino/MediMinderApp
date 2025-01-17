@@ -1,0 +1,356 @@
+@import url("https://fonts.googleapis.com/css2?family=Truculenta:opsz,wght@12..72,100..900&display=swap");
+
+:root {
+  --clr-dark: #2b2b2b;
+  --clr-light: #ffffff;
+  --clr-primary: #1b8b83;
+  --clr-secondary: #cfa584;
+  --clr-tertiary: #d9d9d9;
+  --font-style: "Truculenta", sans-serif;
+  --h1: 5rem;
+  --h2: 3.5rem;
+  --h3: 2.5rem;
+  --h4: 2rem;
+}
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+*:before,
+*:after {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+font,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td {
+  border: 0;
+  font-family: inherit;
+  font-size: 100%;
+  font-style: inherit;
+  font-weight: inherit;
+  margin: 0;
+  outline: 0;
+  padding: 0;
+  vertical-align: baseline;
+  scroll-behavior: smooth;
+  list-style: none;
+}
+
+html {
+  font-size: 62.5%;
+  height: 100%;
+}
+
+body {
+  color: var(--clr-dark);
+  font-family: var(--font-style);
+  font-size: 1.6rem;
+  overflow-x: hidden;
+  line-height: 1.4;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+article,
+aside,
+footer,
+header,
+nav,
+section,
+time {
+  display: block;
+}
+
+a {
+  text-decoration: none;
+}
+img {
+  max-width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: 150rem;
+  margin: 0 auto;
+  padding: 0 5rem;
+}
+
+h1 {
+  font-size: var(--h1);
+  text-align: center;
+  margin-bottom: 10rem;
+}
+h2 {
+  font-size: var(--h2);
+}
+h3 {
+  font-size: var(--h3);
+}
+h4 {
+  font-size: var(--h4);
+}
+
+.backdrop {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: #2b2b2b;
+  opacity: 0.5;
+  z-index: 1;
+}
+
+.userForm {
+  display: grid;
+  grid-template-columns: 2fr 2fr 0.5fr;
+  align-items: center;
+  justify-items: center;
+  margin: 0 auto;
+  background-color: #fff;
+  z-index: 9999;
+  position: fixed;
+  padding: 4rem 6rem;
+  top: 50%;
+  left: 50%;
+  transform: translateY(-50%);
+  transform: translateX(-50%);
+  gap: 1rem;
+}
+
+.userForm.delete {
+  grid-template-columns: 4fr 0.5fr 0.5fr;
+}
+
+.userForm.sched {
+  grid-template-columns: repeat(9, auto);
+}
+
+.userForm.sched input.step {
+  width: 6ch
+}
+
+.userForm label {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.closeUserForm {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateX(-100%);
+  cursor: default;
+}
+
+#displayUser {
+  display: grid;
+  gap: 5rem;
+  margin-top: 7rem;
+}
+.user {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 5rem;
+  align-items: center;
+  justify-items: center;
+  border-bottom: 1px solid #2b2b2b;
+  padding-bottom: 5rem;
+}
+
+.user:last-child {
+  border-bottom: none;
+}
+
+.user__info {
+  display: grid;
+  gap: 5rem;
+}
+
+.user__details {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+}
+
+.user__details img {
+  border-radius: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  margin-bottom: 2rem;
+}
+
+.user__name {
+  display: grid;
+  gap: 3rem;
+  grid-template-columns: 4fr 1fr;
+}
+
+.user__btns {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.user__btns button:last-child:disabled {
+  background-color: rgb(0, 200, 0);
+  color: #fff;
+  padding: 0 2rem;
+}
+
+.user__log--btns {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  padding: 0 5rem;
+}
+
+.user__log {
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+  max-width: 700px;
+  min-width: 300px;
+  padding: 0 2rem;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  gap: 1rem;
+}
+
+.user__log--group {
+  display: none;
+  height: 100%;
+}
+
+.user__log--group.active {
+  display: grid;
+  grid-template-rows: .5fr .5fr .5fr 5fr;
+  align-items: end;
+  max-height: 500px;
+  height: 500px;
+}
+
+/* .user__log--btns {
+  
+} */
+
+.user__log--btns button {
+  padding: 0.5rem 0;
+}
+
+.user__log--btns button.active {
+  background-color: rgb(199, 199, 199);
+}
+
+.user__log--details {
+  display: grid;
+  grid-template-columns: 2fr 2fr 2fr .5fr 2fr;
+  gap: 1em;
+  align-items: center;
+  justify-items: center;
+}
+
+.user__log--title {
+  text-align: center;
+  font-weight: bolder;
+  margin-bottom: 2rem;
+  padding-right: 1.7rem;
+}
+
+.user__log--head {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  justify-items: center;
+  font-weight: bolder;
+  margin-bottom: 1rem;
+  /* padding-right: 1.7rem; */
+}
+
+.user__log--body {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.user__log--data {
+  padding-top: .5rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  justify-items: center;
+  border-top: 1px solid #2b2b2b;
+}
+
+
+.activateSchedBtn.active {
+  background-color: rgb(0, 200, 0);
+  color: #fff;  
+}

@@ -1,0 +1,38 @@
+function addElements(id, name, imgName, status) {
+  const displayUser = document.getElementById("displayUser");
+
+  // Create a div for each user
+  const userDiv = document.createElement("div");
+  userDiv.classList.add("user");
+  userDiv.id = `user${id}`; // Set the id of the div
+
+  // Create the user info container
+  const userInfo = document.createElement("div");
+  userInfo.classList.add("user__info");
+
+  // Create the user details container
+  const userDetails = document.createElement("div");
+  userDetails.classList.add("user__details");
+
+  // Create the image element
+  const imgElement = document.createElement("img");
+  imgElement.src = `./uploads/${imgName}`; // Set the image source
+  imgElement.alt = "Profile Picture"; // Set the alt text for the image
+
+  // Create an h3 element for the user's name
+  const nameElement = document.createElement("h3");
+  nameElement.textContent = name; // Set the name text
+
+  // Append the img and h3 to the userDetails div
+  userDetails.appendChild(imgElement);
+  userDetails.appendChild(nameElement);
+
+  // Append the userDetails to the userInfo container
+  userInfo.appendChild(userDetails);
+
+  // Append the userInfo to the userDiv container
+  userDiv.appendChild(userInfo);
+
+  // Finally, append the userDiv to the main displayUser div
+  displayUser.appendChild(userDiv);
+}
