@@ -5,28 +5,32 @@ from werkzeug.utils import secure_filename
 import uuid as uuid
 from flask_cors import CORS
 from datetime import datetime, timedelta
-
-app = Flask(__name__)
+import mysql.connector
 
 db_name = "medtrackdb"
+
+app = Flask(__name__)
 number_of_sched_ahead = 10
 
 # Enable CORS for all routes
 CORS(app)
 
-# Configure MySQL connection
-app.config['MYSQL_HOST'] = "localhost"
-app.config['MYSQL_USER'] = "root"
-app.config['MYSQL_PASSWORD'] = ""
-app.config['MYSQL_DB'] = db_name
+# app.config['DEBUG'] = True
 
 # Configure upload folder and allowed file types
+# app.config['UPLOAD_FOLDER'] = '/home/mediminder457/mysite/uploads/'
 app.config['UPLOAD_FOLDER'] = 'C:/Users/aquin/Downloads/MEDICATION/backend/uploads'
 
-mysql = MySQL(app)
+# mysql = MySQL(app)
+
+def db_connection():
+    # connection = mysql.connector.connect(host="193.203.184.165", user="u854837124_mediminder", password="mediMinder457!", database="u854837124_mediminder_db")
+    connection = mysql.connector.connect(host="localhost", user="root", password="", database=db_name)
+    return connection
 
 def strip_seconds():
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     cursor.execute("SELECT uid, start FROM pockets")
     records = cursor.fetchall()
@@ -40,26 +44,26 @@ def strip_seconds():
 
         # Update the database
         cursor.execute(
-            "UPDATE pockets SET start = %s WHERE uid = %s", 
+            "UPDATE pockets SET start = %s WHERE uid = %s",
             (formatted_datetime, uid)
         )
 
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()
 
 def initialize_database():
     """Ensure the database and table exist."""
-    connection = mysql.connection
-    cursor = connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     try:
         # Ensure database exists
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
         print(f"Database '{db_name}' ensured.")
-        
+
         # Use the database
         cursor.execute(f"USE {db_name}")
-        
+
         # Ensure the 'user' table exists
         cursor.execute(
             """
@@ -71,7 +75,7 @@ def initialize_database():
             )
             """
         )
-        mysql.connection.commit()
+        mysql.commit()
         print("Table 'users' ensured.")
 
         cursor.execute(
@@ -89,7 +93,7 @@ def initialize_database():
             )
             """
         )
-        mysql.connection.commit()
+        mysql.commit()
         print("Table 'pockets' ensured.")
 
         cursor.execute(
@@ -105,19 +109,19 @@ def initialize_database():
             )
             """
         )
-        mysql.connection.commit()
+        mysql.commit()
         print("Table 'records' ensured.")
-        
+
     except Exception as e:
         print(f"Error during database initialization: {e}")
     finally:
         cursor.close()
 
 
-# Initialize database on application start
 with app.app_context():
     initialize_database()
-    
+
+
 def save_image(image):
     if image:
         # grab the image filename
@@ -138,14 +142,18 @@ def delete_image(image_name):
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
 
         if os.path.exists(image_path):
-            os.remove(image_path)    
+            os.remove(image_path)
 
 
 # App Routing
+@app.route('/')
+def index():
+    return "Hello, Flask! Database and table setup is automatic."
+
 @app.route('/show_databases')
 def show_databases():
-    connection = mysql.connection
-    cursor = connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     try:
         cursor.execute("SHOW DATABASES")
@@ -160,8 +168,8 @@ def show_databases():
 
 @app.route('/show_tables')
 def show_tables():
-    connection = mysql.connection
-    cursor = connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     try:
         cursor.execute(f"USE {db_name}")
@@ -173,13 +181,10 @@ def show_tables():
     finally:
         cursor.close()
 
-@app.route('/')
-def index():
-    return "Hello, Flask! Database and table setup is automatic."
-
 @app.route('/fetch_users', methods=['GET'])
 def fetch_users():
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
     
@@ -207,7 +212,8 @@ def create_user():
 
     img_name = save_image(image)
 
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT name FROM users WHERE status = 'Active'")
     n_active = cursor.fetchone()
 
@@ -217,7 +223,7 @@ def create_user():
         status = "Inactive"
 
     cursor.execute("INSERT INTO users (name, img_name, status) VALUES (%s, %s, %s)", (name, img_name, status,))
-    mysql.connection.commit()
+    mysql.commit()
 
     user_id = cursor.lastrowid  # Get the ID of the last inserted user
     pocket_data = [
@@ -229,7 +235,7 @@ def create_user():
     ]
 
     cursor.executemany("INSERT INTO pockets (id, legend, label) VALUES (%s, %s, %s)", pocket_data)
-    mysql.connection.commit()
+    mysql.commit()
  
     cursor.close()
 
@@ -240,7 +246,8 @@ def update_user(id):
     name = request.form['updatedUserName']
     image = request.files['updatedUserImg']
 
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT name, img_name FROM users WHERE id = %s", (id,))
     user = cursor.fetchone()
 
@@ -251,13 +258,14 @@ def update_user(id):
         img_name = user[1]
 
     cursor.execute("UPDATE users SET name = %s, img_name = %s WHERE id = %s", (name, img_name, id,))
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()
     return "User updated successfully!"
 
 @app.route('/delete_user/<int:id>', methods=['DELETE'])
 def delete_user(id):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     cursor.execute("DELETE FROM pockets WHERE id = %s", (id,))
 
@@ -269,13 +277,14 @@ def delete_user(id):
         delete_image(user_img[0])
 
     cursor.execute("DELETE FROM users WHERE id = %s", (id,))
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()
     return "User deleted successfully!"
 
 @app.route('/set_active/<int:id>', methods=['PATCH'])
 def set_active(id):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT id FROM users WHERE status = 'Active' AND id != %s", (id,))
     active_ID = cursor.fetchone()
 
@@ -283,7 +292,7 @@ def set_active(id):
         cursor.execute("UPDATE users SET status = 'Inactive' WHERE id = %s", (active_ID[0],))
         cursor.execute("UPDATE pockets SET status = 'Deactivated' WHERE id = %s", (active_ID[0],))
         cursor.execute("UPDATE users SET status = 'Active' WHERE id = %s", (id,))
-        mysql.connection.commit()
+        mysql.commit()
         cursor.close()
         return "User updated successfully!"
     
@@ -291,7 +300,8 @@ def set_active(id):
 
 @app.route('/fetch_pockets/<int:id>', methods=['GET'])
 def fetch_pockets(id):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT uid, legend, label, start, hour, min, status FROM pockets WHERE id = %s", (id,))
     pockets = cursor.fetchall()
 
@@ -314,7 +324,8 @@ def fetch_pockets(id):
 def rename_label(uid):
     label = request.form['renameLabel']
 
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT label FROM pockets WHERE uid = %s", (uid,))
     labelQuery = cursor.fetchone()[0]
 
@@ -323,7 +334,7 @@ def rename_label(uid):
     if labelQuery.upper() != label.upper():
         deactivate_sched(uid)
   
-    mysql.connection.commit() 
+    mysql.commit() 
     cursor.close()
 
     return "Label renamed successfully!"
@@ -337,7 +348,8 @@ def set_sched(uid):
 
     start = " ".join([date, time])
 
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("SELECT start, hour, min FROM pockets WHERE uid = %s", (uid,))
     oldQuery = cursor.fetchone()
     
@@ -348,7 +360,7 @@ def set_sched(uid):
     if oldQuery != newQuery:
         deactivate_sched(uid)
     
-    mysql.connection.commit() 
+    mysql.commit() 
     cursor.close()
 
     return "Label renamed successfully!"
@@ -363,19 +375,22 @@ def toggle_sched(uid, stat):
     return "Schedule activated/deactivated successfully!"
 
 def activate_sched(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("UPDATE pockets SET status = 'Activated' WHERE uid = %s", (uid,))
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close() 
 
 def deactivate_sched(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     cursor.execute("UPDATE pockets SET status = 'Deactivated' WHERE uid = %s", (uid,))
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()
 
 def create_schedule(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
 
     cursor.execute("SELECT label, start FROM pockets WHERE uid = %s", (uid,))
     pocket_data = cursor.fetchone()
@@ -387,17 +402,19 @@ def create_schedule(uid):
     
 
     if len(sched_data) < 1:
-        cursor = mysql.connection.cursor()
+        mysql = db_connection()
+        cursor = mysql.cursor()
         cursor.execute("INSERT INTO records (uid, label, sched) VALUES (%s, %s, %s)", (uid, label, new_sched))
-        mysql.connection.commit()
+        mysql.commit()
         cursor.close()
         return "Inserted a new schedule"
 
     
     if pocket_data !=  sched_data[-1]:
-        cursor = mysql.connection.cursor()
+        mysql = db_connection()
+        cursor = mysql.cursor()
         cursor.execute("INSERT INTO records (uid, label, sched) VALUES (%s, %s, %s)", (uid, label, new_sched))
-        mysql.connection.commit()
+        mysql.commit()
         cursor.close()
         return "Inserted a new schedule"
     
@@ -405,7 +422,8 @@ def create_schedule(uid):
     return "Same as the last schedule"
     
 def step_schedule(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     
     # Fetch the step hour and minute for the given user ID (uid)
     cursor.execute("SELECT hour, min FROM pockets WHERE uid = %s", (uid,))
@@ -439,13 +457,14 @@ def step_schedule(uid):
         new_schedules.append(sched)
 
     cursor.executemany("INSERT INTO records (uid, label, sched) VALUES (%s, %s, %s)", new_schedules)
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()  
 
     return "Successfully added new schedules"  
     
 def remove_null_schedule(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     
     # Select records with 'taken' IS NULL for the given user ID
     cursor.execute("SELECT * FROM records WHERE taken IS NULL AND uid = %s", (uid,))
@@ -457,14 +476,15 @@ def remove_null_schedule(uid):
 
     # Delete the records with 'taken' IS NULL for the user
     cursor.execute("DELETE FROM records WHERE taken IS NULL AND uid = %s", (uid,))
-    mysql.connection.commit()
+    mysql.commit()
     cursor.close()
 
     return f"Deleted {cursor.rowcount} records with NULL 'taken' for UID {uid}."
 
 @app.route('/fetch_records/<int:uid>', methods=['GET'])
 def fetch_records(uid):
-    cursor = mysql.connection.cursor()
+    mysql = db_connection()
+    cursor = mysql.cursor()
     
     cursor.execute("SELECT status FROM pockets WHERE uid = %s", (uid,))
     pocket_status = cursor.fetchone()[0]
@@ -497,15 +517,7 @@ def fetch_records(uid):
     ]
 
     return jsonify(record_list), 200
-
-@app.route('/get_image/<path:filename>', methods=['GET'])
-def get_image(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    print(f"Looking for file: {file_path}")
-    if not os.path.isfile(file_path):
-        return "File not found", 404
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
+    
 
 if __name__ == "__main__":
     if not os.path.exists(app.config['UPLOAD_FOLDER']):

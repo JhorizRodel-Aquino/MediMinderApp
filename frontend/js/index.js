@@ -1,4 +1,5 @@
-const apiURL = "http://127.0.0.1:5000";
+const apiURL = "https://mediminder457.pythonanywhere.com";
+// const apiURL = "http://127.0.0.1:5000";
 
 document.getElementById("createUserForm").onsubmit = (e) => {
   createUser(e);
@@ -57,7 +58,7 @@ function displayUsers(userList) {
   // Loop through the users and add them to the page
   userList.forEach((user) => {
     addUserElements(user.id, user.name, user.img_name, user.status);
-    fetchPockets(user.id);
+    fetchPockets(user.id, user.status);
   });
 }
 
@@ -70,7 +71,7 @@ function addUserElements(id, name, imgName, status) {
     <div class="user" id="user${id}">
         <div class="user__info">
             <div class="user__details">
-                <img src="./uploads/${imgName}" alt="Profile Picture">
+                <img src="${apiURL}/get_image/${imgName}" alt="Profile Picture">
                 <h3>${name}</h3>
                 <div class="user__btns" id="user__btns${id}">
                     <button onclick="updateUser(event, ${id}, '${name}')">Edit</button>
@@ -98,11 +99,12 @@ function addUserElements(id, name, imgName, status) {
   }
 }
 
-function displayPockets(id, pocketList) {
+function displayPockets(id, userStatus, pocketList) {
   // Loop through the users and add them to the page
   pocketList.forEach((pocket) => {
     addPocketElements(
       id,
+      userStatus,
       pocket.uid,
       pocket.legend,
       pocket.label,
@@ -183,7 +185,17 @@ function convertTo12HourFormat(time) {
   return `${hour}:${minute} ${ampm}`;
 }
 
-function addPocketElements(id, uid, legend, label, start, hour, min, status) {
+function addPocketElements(
+  id,
+  userStatus,
+  uid,
+  legend,
+  label,
+  start,
+  hour,
+  min,
+  status
+) {
   const [date, time] = start.split(" ");
   formattedTime = convertTo12HourFormat(time);
 
@@ -225,9 +237,15 @@ function addPocketElements(id, uid, legend, label, start, hour, min, status) {
   } else {
     activateSchedBtn.classList.remove("active");
   }
+
+  if (userStatus === "Active") {
+    activateSchedBtn.disabled = false;
+  } else {
+    activateSchedBtn.disabled = true;
+  }
 }
 
-function fetchPockets(id) {
+function fetchPockets(id, userStatus) {
   fetch(`${apiURL}/fetch_pockets/${id}`) // Make a GET request
     .then((response) => {
       if (!response.ok) {
@@ -241,7 +259,7 @@ function fetchPockets(id) {
         return;
       }
       console.log("Fetched pockets:", pocketList);
-      displayPockets(id, pocketList); // Display pockets for the user
+      displayPockets(id, userStatus, pocketList); // Display pockets for the user
     })
     .catch((error) => {
       console.error(`Error fetching pockets for user ID ${id}:`, error);
@@ -376,6 +394,7 @@ function activateSched(e, uid, stat) {
   patchRequest.onload = () => {
     if (patchRequest.status === 200) {
       window.location.reload();
+      fetchUsers();
     } else {
       alert("An error occurred: " + patchRequest.statusText);
     }

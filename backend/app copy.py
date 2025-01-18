@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
 import os
 from werkzeug.utils import secure_filename
@@ -8,20 +8,19 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-db_name = "medtrackdb"
 number_of_sched_ahead = 10
 
 # Enable CORS for all routes
 CORS(app)
 
 # Configure MySQL connection
-app.config['MYSQL_HOST'] = "localhost"
-app.config['MYSQL_USER'] = "root"
-app.config['MYSQL_PASSWORD'] = ""
-app.config['MYSQL_DB'] = db_name
+app.config['MYSQL_HOST'] = "193.203.184.165"
+app.config['MYSQL_USER'] = "u854837124_mediminder"
+app.config['MYSQL_PASSWORD'] = "mediMinder457!"
+app.config['MYSQL_DB'] = "u854837124_mediminder_db"
 
 # Configure upload folder and allowed file types
-app.config['UPLOAD_FOLDER'] = 'C:/Users/aquin/Downloads/MEDICATION/backend/uploads'
+app.config['UPLOAD_FOLDER'] = './backend/uploads'
 
 mysql = MySQL(app)
 
@@ -54,11 +53,11 @@ def initialize_database():
 
     try:
         # Ensure database exists
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-        print(f"Database '{db_name}' ensured.")
+        cursor.execute("CREATE DATABASE IF NOT EXISTS u854837124_mediminder_db")
+        print("Database 'u854837124_mediminder_db' ensured.")
         
-        # Use the database
-        cursor.execute(f"USE {db_name}")
+        # Use the 'u854837124_mediminder_db' database
+        cursor.execute("USE u854837124_mediminder_db")
         
         # Ensure the 'user' table exists
         cursor.execute(
@@ -164,7 +163,7 @@ def show_tables():
     cursor = connection.cursor()
 
     try:
-        cursor.execute(f"USE {db_name}")
+        cursor.execute("USE u854837124_mediminder_db")
         cursor.execute("SHOW TABLES")
         tables = [table[0] for table in cursor.fetchall()]  # Fetch all tables
         return jsonify(tables)
@@ -281,7 +280,6 @@ def set_active(id):
 
     if active_ID:
         cursor.execute("UPDATE users SET status = 'Inactive' WHERE id = %s", (active_ID[0],))
-        cursor.execute("UPDATE pockets SET status = 'Deactivated' WHERE id = %s", (active_ID[0],))
         cursor.execute("UPDATE users SET status = 'Active' WHERE id = %s", (id,))
         mysql.connection.commit()
         cursor.close()
@@ -497,15 +495,7 @@ def fetch_records(uid):
     ]
 
     return jsonify(record_list), 200
-
-@app.route('/get_image/<path:filename>', methods=['GET'])
-def get_image(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    print(f"Looking for file: {file_path}")
-    if not os.path.isfile(file_path):
-        return "File not found", 404
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
+    
 
 if __name__ == "__main__":
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
