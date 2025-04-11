@@ -1,5 +1,12 @@
-const apiURL = "https://mediminder457.pythonanywhere.com";
+// const apiURL = "https://mediminder457.pythonanywhere.com";
 // const apiURL = "http://127.0.0.1:5000";
+// const apiURL = "https://mediminder-backend.vercel.app";
+const apiURL = "http://api.mediminder.site";
+
+// const socket = io(apiURL);
+// socket.on("records_updated", (data) => {
+//   if (data) window.location.reload();
+// });
 
 document.getElementById("createUserForm").onsubmit = (e) => {
   createUser(e);
@@ -20,7 +27,7 @@ function createUser(e) {
 
   postRequest.onload = () => {
     if (postRequest.status === 200) {
-      //   alert(postRequest.responseText); // Success response
+        console.log(postRequest.responseText); // Success response
       document.getElementById("createUserForm").reset(); // Reset the form
       window.location.reload();
     } else {
@@ -185,6 +192,15 @@ function convertTo12HourFormat(time) {
   return `${hour}:${minute} ${ampm}`;
 }
 
+function formatTakenTime(taken) {
+  // Remove GMT, split the date and time, and keep both
+  let parts = taken.replace("GMT", "").trim().split(" ");
+
+  // Reformat time and keep the date part
+  let formattedTime = convertTo12HourFormat(parts[4]);
+  return `${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]} ${formattedTime}`;
+}
+
 function addPocketElements(
   id,
   userStatus,
@@ -196,8 +212,18 @@ function addPocketElements(
   min,
   status
 ) {
-  const [date, time] = start.split(" ");
-  formattedTime = convertTo12HourFormat(time);
+  let [date, time] = ["", ""];
+  let formattedTime = "";
+  let step = "";
+
+  if (start != "") {
+    [date, time] = start.split(" ");
+    formattedTime = convertTo12HourFormat(time);
+  }
+
+  if (hour != 0 || min != 0) {
+    step = `${hour}hr : ${min}min`;
+  }
 
   let stat = 0;
   if (status == "Deactivated") {
@@ -210,9 +236,9 @@ function addPocketElements(
     <div class="user__log--group group${id}" id="user__log--group${id}${legend}">
         <h4 class="user__log--title">${label} <button onclick="renameLabel(event, ${uid}, '${label}')">Rename</button></h4>
         <div class="user__log--details">
-            <p>Start Date: ${date}</p>
-            <p>Start Time: ${formattedTime}</p>
-            <p>Step: ${hour}hr : ${min}min</p>
+            <p>Start Date: <small id=date-${uid}>${date}</small></p>
+            <p>Start Time: <small id=time-${uid}>${formattedTime}</small></p>
+            <p>Step: ${step}</p>
             <button onclick="setSched(event, ${uid}, '${date}', '${time}', '${hour}', '${min}')">Edit</button>
             <button id="activateSchedBtn${uid}" onclick="activateSched(event, ${uid}, ${stat})" class="activateSchedBtn">${status}</button>
         </div>
@@ -346,6 +372,7 @@ function renameLabel(e, uid, name) {
       if (patchRequest.status === 200) {
         // alert("Medication renamed successfully!");
         closeModal();
+        activateSched(e, uid, 0);
         window.location.reload();
       } else {
         alert("An error occurred: " + patchRequest.statusText);
@@ -388,13 +415,28 @@ function setSched(e, uid, date, time, hour, min) {
 function activateSched(e, uid, stat) {
   e.preventDefault();
 
+  // Get date and time inputs
+  const dateInput = document.getElementById(`date-${uid}`);
+  const timeInput = document.getElementById(`time-${uid}`);
+
+  // Validate date and time
+  if (
+    !dateInput ||
+    !timeInput ||
+    !dateInput.textContent ||
+    !timeInput.textContent
+  ) {
+    alert("Please set both date and time before activating the schedule.");
+    return;
+  }
+
+  // Proceed with activation request
   const patchRequest = new XMLHttpRequest();
   patchRequest.open("PATCH", `${apiURL}/toggle_sched/${uid}/${stat}`, true);
 
   patchRequest.onload = () => {
     if (patchRequest.status === 200) {
       window.location.reload();
-      fetchUsers();
     } else {
       alert("An error occurred: " + patchRequest.statusText);
     }
@@ -464,18 +506,34 @@ function openRenameLabelModal(name) {
 
 function openSetSchedModal(date, time, hour, min) {
   if (!document.querySelector(".modal")) {
+    // Get current date and time
+    const now = new Date();
+
+    // Ensure date format is consistent in YYYY-MM-DD (fixes timezone issue)
+    const today = now.toLocaleDateString("en-CA");
+
+    // Get the current time and add 10 minutes
+    now.setMinutes(now.getMinutes() + 1);
+    const futureHours = String(now.getHours()).padStart(2, "0");
+    const futureMinutes = String(now.getMinutes()).padStart(2, "0");
+    const futureTime = `${futureHours}:${futureMinutes}`;
+
+    // Ensure min is at least 1
+    min = Math.max(1, min || 1);
+
     const modalHTML = `
         <div class="modal">
             <div class="backdrop" onclick="closeModal()"></div>
             <form id="setSchedForm" class="userForm sched">
                 <h2 id="closeSetSchedForm" class="closeUserForm" onclick="closeModal()">&times;</h2>
                 <p>Date:</p>
-                <input type="date" id="setDate" name="setDate" value="${date}"/>
+                <input type="date" id="setDate" name="setDate" value="${today}" min="${today}"/>
                 <p>Time:</p>
-                <input type="time" id="setTime" name="setTime" value="${time}"/>
+                <input type="time" id="setTime" name="setTime" value="${futureTime}" min="${futureTime}"/>
                 <p>Step:</p>
-                <input class="step" type="number" id="setHour" name="setHour" value="${hour}"/> <small>:</small> 
-                <input class="step" type="number" id="setMin" name="setMin" value="${min}"/>
+                <input class="step" type="number" id="setHour" name="setHour" value="${hour}" min="0"/>
+                <small>:</small> 
+                <input class="step" type="number" id="setMin" name="setMin" value="${min}" min="1"/>
                 <button type="submit">Submit</button>
             </form>
         </div>
@@ -551,6 +609,8 @@ function addRecordElements(id, legend, uuid, label, sched, taken, status) {
 
   if (!taken) {
     taken = "";
+  } else {
+    taken = formatTakenTime(taken);
   }
 
   if (!status) {
@@ -575,3 +635,4 @@ function addRecordElements(id, legend, uuid, label, sched, taken, status) {
 
 // Trigger the fetch operation
 fetchUsers();
+
